@@ -1,33 +1,61 @@
 package main
 
 import (
+	"context"
+	"log"
+	"net"
+	"net/http"
+	"os"
+
+	"github.com/go-chi/chi"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+
+	"github.com/DBoyara/go-invest-bag/pkg/models"
+	"github.com/DBoyara/go-invest-bag/pkg/server"
+)
+
+const (
+	defaultPort = "9090"
+	defaultHost = "0.0.0.0"
 )
 
 func main() {
+	port, ok := os.LookupEnv("PORT")
+	if !ok {
+		port = defaultPort
+	}
+
+	host, ok := os.LookupEnv("HOST")
+	if !ok {
+		host = defaultHost
+	}
+
+	if err := execute(net.JoinHostPort(host, port)); err != nil {
+		log.Println(err)
+		os.Exit(1)
+	}
+}
+
+func execute(addr string) (err error) {
+	ctx := context.Background()
 	db, err := gorm.Open(sqlite.Open("test.db"), &gorm.Config{})
 	if err != nil {
 		panic("failed to connect database")
 	}
 
 	// Миграция схем
-	db.AutoMigrate(&Position{})
+	// db.AutoMigrate(&models.Position{})
+	db.Migrator().CreateTable(&models.Position{})
 
-	// Создание
-	db.Create(&Product{})
+	mux := chi.NewMux()
+	application := server.NewServer(ctx, mux, db)
+	application.Init()
 
-	// Чтение
-	// var product Product
-	// db.First(&product, 1) // find product with integer primary key
-	// db.First(&product, "code = ?", "D42") // find product with code D42
-
-	// // Обновление - обновить цену товара в 200
-	// db.Model(&product).Update("Price", 200)
-	// // Обновление - обновить несколько полей
-	// db.Model(&product).Updates(Product{Price: 200, Code: "F42"}) // non-zero fields
-	// db.Model(&product).Updates(map[string]interface{}{"Price": 200, "Code": "F42"})
-
-	// // Удаление - удаление товара
-	// db.Delete(&product, 1)
+	s := &http.Server{
+		Addr:    addr,
+		Handler: application,
+	}
+	log.Printf("Server run on http://%s", addr)
+	return s.ListenAndServe()
 }
