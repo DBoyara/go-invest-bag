@@ -25,7 +25,8 @@ func NewServer(ctx context.Context, mux chi.Router, db *gorm.DB) *server {
 
 func (s *server) Init() {
 	s.mux.Get("/api/position", s.getPosition)
-	s.mux.Post("/api/position", s.addPosition)
+	s.mux.Post("/api/position/add", s.addPosition)
+	s.mux.Post("/api/position/del", s.delPosition)
 }
 
 func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -34,7 +35,7 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func (s *server) getPosition(w http.ResponseWriter, r *http.Request) {
 
-	repository.GetPosition(s.db, s.ctx)
+	// repository.GetPosition(s.db, s.ctx, position)
 
 	log.Println()
 }
@@ -58,7 +59,34 @@ func (s *server) addPosition(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Printf("position %v", position)
 
-	position, status := repository.AddPosition(s.db, s.ctx, position)
+	status, e := repository.AddPosition(s.db, s.ctx, position)
+	log.Println(e)
+
+	w.WriteHeader(status)
+	jsonResponse(w, r)
+}
+
+func (s *server) delPosition(w http.ResponseWriter, r *http.Request) {
+	body, err := ioutil.ReadAll(r.Body)
+	if err != nil {
+		errModel := models.ErrModel{Err: err.Error()}
+		w.WriteHeader(http.StatusServiceUnavailable)
+		jsonResponse(w, r, errModel)
+		return
+	}
+
+	position := &models.Position{}
+	err = json.Unmarshal(body, position)
+	if err != nil {
+		errModel := models.ErrModel{Err: err.Error()}
+		w.WriteHeader(http.StatusNotImplemented)
+		jsonResponse(w, r, errModel)
+		return
+	}
+	log.Printf("position %v", position)
+
+	status, e := repository.DelPosition(s.db, s.ctx, position)
+	log.Println(e)
 
 	w.WriteHeader(status)
 	jsonResponse(w, r)

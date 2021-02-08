@@ -12,7 +12,7 @@ type Position struct {
 	Name      string  `json:"name"`
 	Type      string  `json:"type"`
 	Count     uint16  `json:"count"`
-	Price     float32 `json:"price"`
-	Amount    uint32
+	Price     float64 `json:"price"`
+	Amount    float64
 	Currency  string `json:"currency"`
 }

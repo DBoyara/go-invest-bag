@@ -1,15 +1,28 @@
 ### Send get request 
 GET http://0.0.0.0:9090/api/position
 
-### Send post request 
-POST http://0.0.0.0:9090/api/position
+### Add position
+POST http://0.0.0.0:9090/api/position/add
 Content-Type: application/json
 
 {
   "tiker": "TCSG",
   "name": "TCS Group",
   "type": "Акция",
-  "count": 20,
-  "price": 3228.2,
+  "count": 5,
+  "price": 3221.38,
+  "currency": "RUB"
+}
+
+### Del position
+POST http://0.0.0.0:9090/api/position/del
+Content-Type: application/json
+
+{
+  "tiker": "TCSG",
+  "name": "TCS Group",
+  "type": "Акция",
+  "count": 400,
+  "price": 1021.38,
   "currency": "RUB"
 }
