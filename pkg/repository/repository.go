@@ -11,14 +11,17 @@ import (
 )
 
 var (
-	ErrTickerNotFound = errors.New("record not found")
-	ErrSellMoreHave   = errors.New("you can't sell more than you have")
+	errTickerNotFound      = errors.New("record not found")
+	errSellMoreHave        = errors.New("you can't sell more than you have")
+	errWrongFormatCurrency = errors.New("wrong format of currency")
 )
 
-func AddPosition(db *gorm.DB, ctx context.Context, position *models.Position) (int, error) {
+// AddPosition Add new or update position
+func AddPosition(ctx context.Context, db *gorm.DB, position *models.Position) (int, error) {
 	var p models.Position
 	r := db.Where("ticker = ?", position.Ticker).First(&p)
-	if r.Error == ErrTickerNotFound {
+	if errors.Is(r.Error, gorm.ErrRecordNotFound) {
+		position.Amount = toFixed(float64(position.Count)*position.Price, 2)
 		db.Create(&position)
 		return 201, nil
 	}
@@ -27,17 +30,18 @@ func AddPosition(db *gorm.DB, ctx context.Context, position *models.Position) (i
 	}
 
 	position.Count += p.Count
-	position.Amount = float64(position.Count) * position.Price
+	position.Amount = toFixed(float64(position.Count)*position.Price, 2)
 
 	db.Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "ticker"}},
-		DoUpdates: clause.AssignmentColumns([]string{"count", "price", "amount"}),
+		DoUpdates: clause.AssignmentColumns([]string{"count", "price", "amount", "updated_at"}),
 	}).Create(&position)
 
 	return 200, nil
 }
 
-func DelPosition(db *gorm.DB, ctx context.Context, position *models.Position) (int, error) {
+// DelPosition Del or update position
+func DelPosition(ctx context.Context, db *gorm.DB, position *models.Position) (int, error) {
 	var p models.Position
 	r := db.Where("ticker = ?", position.Ticker).First(&p)
 	if r.Error != nil {
@@ -46,28 +50,50 @@ func DelPosition(db *gorm.DB, ctx context.Context, position *models.Position) (i
 
 	position.Count = p.Count - position.Count
 	if position.Count < 0 {
-		return 400, ErrSellMoreHave
+		return 400, errSellMoreHave
 	}
+
+	position.Amount = toFixed(float64(position.Count)*position.Price, 2)
 	if position.Count == 0 {
-		db.Where("ticker = ?", position.Ticker).Delete(&position)
+		db.Clauses(clause.OnConflict{
+			Columns:   []clause.Column{{Name: "ticker"}},
+			DoUpdates: clause.AssignmentColumns([]string{"count", "price", "amount", "updated_at", "deleted_at"}),
+		}).Create(&position)
 		return 200, nil
 	}
-	position.Amount = float64(position.Count) * position.Price
 
 	db.Clauses(clause.OnConflict{
 		Columns:   []clause.Column{{Name: "ticker"}},
-		DoUpdates: clause.AssignmentColumns([]string{"count", "price", "amount"}),
+		DoUpdates: clause.AssignmentColumns([]string{"count", "price", "amount", "updated_at"}),
 	}).Create(&position)
 
 	return 200, nil
 }
 
-func GetPosition(db *gorm.DB, ctx context.Context, position *models.Position) {
-	var p *models.Position
+// GetPosition get one position
+func GetPosition(ctx context.Context, db *gorm.DB, position *models.Position) {
+	var p models.Position
 	result := db.WithContext(ctx).Find(&p)
 	log.Println(db.Scan(&result))
 }
 
-func GetPositions() {
+// GetPositions all positions
+func GetPositions(ctx context.Context, db *gorm.DB) ([]models.Position, int, error) {
+	var userPositions []models.Position
 
+	rows, err := db.Model(&models.Position{}).Rows()
+	defer rows.Close()
+	if err != nil {
+		return nil, 501, err
+	}
+
+	for rows.Next() {
+		var p models.Position
+		db.ScanRows(rows, &p)
+		if p.Count != 0 {
+			userPositions = append(userPositions, p)
+		}
+	}
+
+	return userPositions, 200, nil
 }

@@ -24,7 +24,7 @@ func NewServer(ctx context.Context, mux chi.Router, db *gorm.DB) *server {
 }
 
 func (s *server) Init() {
-	s.mux.Get("/api/position", s.getPosition)
+	s.mux.Get("/api/positions", s.getPositions)
 	s.mux.Post("/api/position/add", s.addPosition)
 	s.mux.Post("/api/position/del", s.delPosition)
 }
@@ -33,11 +33,28 @@ func (s *server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	s.mux.ServeHTTP(w, r)
 }
 
-func (s *server) getPosition(w http.ResponseWriter, r *http.Request) {
+func (s *server) getPositions(w http.ResponseWriter, r *http.Request) {
+	rubUsd := r.URL.Query().Get("rubUsd")
+	rubEvro := r.URL.Query().Get("rubEvro")
 
-	// repository.GetPosition(s.db, s.ctx, position)
+	positions, status, err := repository.GetPositions(s.ctx, s.db)
+	if err != nil {
+		errModel := models.ErrModel{Err: err.Error()}
+		w.WriteHeader(status)
+		jsonResponse(w, r, errModel)
+		return
+	}
 
-	log.Println()
+	proportionPositions, err := repository.CountingPackage(rubUsd, rubEvro, positions)
+	if err != nil {
+		errModel := models.ErrModel{Err: err.Error()}
+		w.WriteHeader(status)
+		jsonResponse(w, r, errModel)
+		return
+	}
+
+	w.WriteHeader(status)
+	jsonResponse(w, r, proportionPositions)
 }
 
 func (s *server) addPosition(w http.ResponseWriter, r *http.Request) {
@@ -59,7 +76,7 @@ func (s *server) addPosition(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Printf("position %v", position)
 
-	status, e := repository.AddPosition(s.db, s.ctx, position)
+	status, e := repository.AddPosition(s.ctx, s.db, position)
 	log.Println(e)
 
 	w.WriteHeader(status)
@@ -85,7 +102,7 @@ func (s *server) delPosition(w http.ResponseWriter, r *http.Request) {
 	}
 	log.Printf("position %v", position)
 
-	status, e := repository.DelPosition(s.db, s.ctx, position)
+	status, e := repository.DelPosition(s.ctx, s.db, position)
 	log.Println(e)
 
 	w.WriteHeader(status)

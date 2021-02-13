@@ -1,17 +1,17 @@
 ### Send get request 
-GET http://0.0.0.0:9090/api/position
+GET http://0.0.0.0:9090/api/positions?rubUsd=73.71&rubEvro=89.3325
 
 ### Add position
 POST http://0.0.0.0:9090/api/position/add
 Content-Type: application/json
 
 {
-  "tiker": "TCSG",
-  "name": "TCS Group",
-  "type": "Акция",
-  "count": 5,
-  "price": 3221.38,
-  "currency": "RUB"
+  "tiker": "TEUR",
+  "name": "Тинькофф Вечный портфель EUR",
+  "type": "Облигация",
+  "count": 10,
+  "price": 0.1036,
+  "currency": "euro"
 }
 
 ### Del position
@@ -19,10 +19,10 @@ POST http://0.0.0.0:9090/api/position/del
 Content-Type: application/json
 
 {
-  "tiker": "TCSG",
-  "name": "TCS Group",
-  "type": "Акция",
-  "count": 400,
-  "price": 1021.38,
-  "currency": "RUB"
+  "tiker": "TSPX",
+  "name": "Тинькофф S&P 500",
+  "type": "Облигация",
+  "count": 1,
+  "price": 0.1001,
+  "currency": "usd"
 }
