@@ -1,8 +1,8 @@
 ### Send get request 
-GET http://0.0.0.0:9090/api/positions?rubUsd=73.71&rubEvro=89.3325
+GET http://0.0.0.0:8080/api/positions?rubUsd=73.71&rubEvro=89.3325
 
 ### Add position
-POST http://0.0.0.0:9090/api/position/add
+POST http://0.0.0.0:8080/api/position/add
 Content-Type: application/json
 
 {
@@ -15,7 +15,7 @@ Content-Type: application/json
 }
 
 ### Del position
-POST http://0.0.0.0:9090/api/position/del
+POST http://0.0.0.0:8080/api/position/del
 Content-Type: application/json
 
 {

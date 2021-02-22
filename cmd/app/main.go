@@ -16,7 +16,7 @@ import (
 )
 
 const (
-	defaultPort = "9090"
+	defaultPort = "8080"
 	defaultHost = "0.0.0.0"
 )
 
