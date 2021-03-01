@@ -2,13 +2,14 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"net"
 	"net/http"
 	"os"
 
 	"github.com/go-chi/chi"
-	"gorm.io/driver/sqlite"
+	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
 	"github.com/DBoyara/go-invest-bag/pkg/models"
@@ -31,15 +32,22 @@ func main() {
 		host = defaultHost
 	}
 
-	if err := execute(net.JoinHostPort(host, port)); err != nil {
+	dbHost, ok := os.LookupEnv("DB_HOST")
+	if !ok {
+		host = defaultHost
+	}
+
+	if err := execute(net.JoinHostPort(host, port), dbHost); err != nil {
 		log.Println(err)
 		os.Exit(1)
 	}
 }
 
-func execute(addr string) (err error) {
+func execute(addr string, dbHost string) (err error) {
+	dsn := fmt.Sprintf("host=%s user=user password=pass dbname=db sslmode=disable TimeZone=Asia/Yekaterinburg", dbHost)
+
 	ctx := context.Background()
-	db, err := gorm.Open(sqlite.Open("test.db"), &gorm.Config{})
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		panic("failed to connect database")
 	}
